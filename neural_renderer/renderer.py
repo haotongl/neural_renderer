@@ -7,6 +7,23 @@ import numpy
 
 import neural_renderer as nr
 
+def q2r(q):
+    qw, qx, qy, qz = q[0], q[1], q[2], q[3]
+    rm = torch.ones((3, 3))
+    rm[0, 0] = 1-2*qy**2-2*qz**2
+    rm[0, 1] = 2*qx*qy - 2*qz*qw
+    rm[0, 2] = 2*qx*qz + 2*qy*qw
+
+    rm[1, 0] = 2*qx*qy + 2*qz*qw
+    rm[1, 1] = 1 - 2*qx**2 - 2*qz**2
+    rm[1, 2] = 2*qy*qz - 2*qx*qw
+
+    rm[2, 0] = 2*qx*qz - 2*qy*qw
+    rm[2, 1] = 2*qz*qy + 2*qx*qw
+    rm[2, 2] = 1 - 2*qx**2 - 2*qy**2
+
+    return rm.cuda()
+
 
 class Renderer(nn.Module):
     def __init__(self, image_size=256, anti_aliasing=True, background_color=[0,0,0],
@@ -57,7 +74,7 @@ class Renderer(nn.Module):
         self.light_intensity_directional = light_intensity_directional
         self.light_color_ambient = light_color_ambient
         self.light_color_directional = light_color_directional
-        self.light_direction = light_direction 
+        self.light_direction = light_direction
 
         # rasterization
         self.rasterizer_eps = 1e-3
@@ -67,7 +84,7 @@ class Renderer(nn.Module):
         Implementation of forward rendering method
         The old API is preserved for back-compatibility with the Chainer implementation
         '''
-        
+
         if mode is None:
             return self.render(vertices, faces, textures, K, R, t, dist_coeffs, orig_size)
         elif mode is 'rgb':
@@ -99,8 +116,7 @@ class Renderer(nn.Module):
         elif self.camera_mode == 'projection':
             if K is None:
                 K = self.K
-            if R is None:
-                R = self.R
+            R = q2r(self.q)
             if t is None:
                 t = self.t
             if dist_coeffs is None:

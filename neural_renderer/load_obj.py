@@ -105,7 +105,7 @@ def load_textures(filename_obj, filename_mtl, texture_size, texture_wrapping='RE
                                                     use_bilinear)
     return textures
 
-def load_obj(filename_obj, normalization=True, texture_size=4, load_texture=False,
+def load_obj(filename_obj, normalization=False, texture_size=4, load_texture=False,
              texture_wrapping='REPEAT', use_bilinear=True):
     """
     Load Wavefront .obj file.
