@@ -89,7 +89,7 @@ def main():
     model.cuda()
 
     # optimizer = chainer.optimizers.Adam(alpha=0.1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     loop = tqdm.tqdm(range(100))
     for i in loop:
         optimizer.zero_grad()
