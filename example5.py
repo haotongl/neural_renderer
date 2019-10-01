@@ -18,6 +18,17 @@ import matplotlib.pyplot as plt
 current_dir = os.path.dirname(os.path.realpath(__file__))
 data_dir = os.path.join(current_dir, 'data')
 
+def cm_degree_5(pose_pred, pose_targets):
+    """ 5 cm 5 degree metric
+    1. pose_pred is considered correct if the translation and rotation errors are w 5 cm and 5 degree respectively
+    """
+    translation_distance = np.linalg.norm(pose_pred[:, 3] - pose_targets[:, 3]) * 100
+    rotation_diff = np.dot(pose_pred[:, :3], pose_targets[:, :3].T)
+    trace = np.trace(rotation_diff)
+    trace = trace if trace <= 3 else 3
+    angular_distance = np.rad2deg(np.arccos((trace - 1.) / 2.))
+    return translation_distance < 5 and angular_distance < 5
+
 class Model(nn.Module):
     def __init__(self, filename_obj, filename_ref=None):
         super(Model, self).__init__()
@@ -94,7 +105,7 @@ def main():
 
     # optimizer = chainer.optimizers.Adam(alpha=0.1)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-    loop = tqdm.tqdm(range(1000))
+    loop = tqdm.tqdm(range(1))
     for i in loop:
         optimizer.zero_grad()
         loss = model()
@@ -106,6 +117,11 @@ def main():
         loop.set_description('Optimizing (loss %.4f)' % loss.sum().item())
         if loss.sum().item() < 0.06:
             break
+    pose_gt = np.load('pose0.npy')
+    pose_ref = np.ones((3, 4))
+    pose_ref[:, 3] = model.renderer.t.detach().cpu().numpy()
+    pose_ref[:, :3] = nr.q2r(model.renderer.q).detach().cpu().numpy()
+    print(cm_degree_5(pose_gt, pose_ref))
     make_gif(args.filename_output)
 
 
