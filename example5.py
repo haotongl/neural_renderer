@@ -38,8 +38,12 @@ class Model(nn.Module):
 
         # camera parameters
         self.K = torch.from_numpy(np.array([[280, 0., 128], [0., 280, 128], [0., 0., 1.]], dtype=np.float32)).cuda()
+
         T = np.load('pose0.npy')
-        self.q = nn.Parameter(torch.from_numpy(np.load('q.npy')))
+        T[:, 3] = T[:, 3]*(np.random.random(3)*0.8+0.6)
+        q = np.load('q.npy')
+        q = q * (0.6 + np.random.random(4)*0.8)
+        self.q = nn.Parameter(torch.from_numpy(q))
         #self.R = nn.Parameter(torch.from_numpy(T[:3, :3]))
         self.t = nn.Parameter(torch.from_numpy(T[:3, 3]))
         # setup renderer
@@ -90,7 +94,7 @@ def main():
 
     # optimizer = chainer.optimizers.Adam(alpha=0.1)
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-    loop = tqdm.tqdm(range(100))
+    loop = tqdm.tqdm(range(1000))
     for i in loop:
         optimizer.zero_grad()
         loss = model()
@@ -100,7 +104,7 @@ def main():
         image = images.detach().cpu().numpy()[0]
         cv2.imwrite('/tmp/_tmp_%04d.png'%i, np.float32(image*255))
         loop.set_description('Optimizing (loss %.4f)' % loss.sum().item())
-        if loss.sum().item() < 0.001:
+        if loss.sum().item() < 0.06:
             break
     make_gif(args.filename_output)
 
